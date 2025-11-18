@@ -1,0 +1,80 @@
+import processing.core.*;
+
+// Clase que gestiona un grupo de partículas y su contenedor específico.
+class ParticleSystem {
+    PApplet p;
+    Particle3D[] particles;
+    PVector containerCenter;
+    float containerSize;
+    int particleShape;
+
+    ParticleSystem(int numParticles, int shapeType, PVector center, float size, PApplet parent) {
+        this.p = parent;
+        this.containerCenter = center;
+        this.containerSize = size;
+        this.particleShape = shapeType;
+        this.particles = new Particle3D[numParticles];
+        
+        initializeParticles(numParticles);
+    }
+    
+    // Inicializa las partículas dentro de los límites del cubo asignado
+void initializeParticles(int numParticles) {
+    float halfSize = containerSize / 2.0f;
+    
+    for (int i = 0; i < numParticles; i++) {
+        // Posición inicial aleatoria DENTRO del cubo, RELATIVA a (0,0,0)
+        // La posición del centro (containerCenter) se le pasa como referencia,
+        // pero la posición de la partícula es RELATIVA.
+        float startX = p.random(-halfSize, halfSize); // <-- CAMBIO
+        float startY = p.random(-halfSize, halfSize); // <-- CAMBIO
+        float startZ = p.random(-halfSize, halfSize); // <-- CAMBIO
+        
+        // Crea una nueva partícula con sus límites específicos
+        this.particles[i] = new Particle3D(
+            startX, startY, startZ,
+            p.random(15, 30),
+            i,
+            this.particles, 
+            p,
+            this.particleShape,
+            this.containerCenter, // Se mantiene como referencia para la colisión
+            this.containerSize
+        );
+    }
+}
+
+    // Ejecuta la simulación y el renderizado para todo el sistema
+    void run(PVector[] poseLandmarks, float landmarkRadius, float gravity, float friction, PVector mouse3D) {
+        for (Particle3D particle : particles) {
+            // Colisiones que afectan a la partícula
+            if (poseLandmarks.length > 0) {
+                particle.collideWithPose(poseLandmarks, landmarkRadius);
+            }
+            particle.collide(SPRING, particles.length); // Colisión entre partículas del mismo sistema
+            particle.collideWithMouse(mouse3D);
+            
+            // Física, movimiento y colisión con el contenedor asignado
+            particle.move(p, gravity, friction); 
+            
+            // Renderizar
+            particle.display();
+        }
+    }
+    
+    // Reinicia las posiciones de las partículas dentro de su contenedor
+void reset() {
+    float halfSize = containerSize / 2.0f;
+    
+    for (Particle3D particle : particles) {
+        particle.x = p.random(-halfSize, halfSize); // <-- CAMBIO
+        particle.y = p.random(-halfSize, halfSize); // <-- CAMBIO
+        particle.z = p.random(-halfSize, halfSize); // <-- CAMBIO
+        
+        // Reiniciar velocidades
+        particle.vx = 0;
+        particle.vy = 0;
+        particle.vz = 0;
+    }
+}
+}
